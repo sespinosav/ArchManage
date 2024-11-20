@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: 'ArchManage project'
+
+Resources:
+  ArchManageS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: archmanage-files
+
+  SaveTextFileLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SaveTextFileFunction
+      Handler: handler.save_file
+      Runtime: python3.10
+      CodeUri: ./src/save_text_file
+      Timeout: 300
+      MemorySize: 128
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref ArchManageS3Bucket
+      Events:
+        SaveTextFileEvent:
+          Type: Api
+          Properties:
+            Path: /save-text-file
+            Method: POST
+            RestApiId: !Ref ArchManageApi
+
+  ArchManageApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: 'ArchManage API'
+        paths:
+          /save-text-file:
+            post:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+            options:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3WriteAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub 'arn:aws:s3:::${ArchManageS3Bucket}/*'
+
+Outputs:
+  ArchManageApiURL:
+    Description: 'URL of the ArchManage API endpoint'
+    Value: !Sub 'https://${ArchManageApi}.execute-api.${AWS::Region}.amazonaws.com/prod/save-text-file'
