@@ -7,7 +7,7 @@ from datetime import datetime
 s3_client = boto3.client('s3')
 bucket_name = os.environ['S3_BUCKET_NAME']
 
-def save_file(event, context):
+def main(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return build_response(200)
 
