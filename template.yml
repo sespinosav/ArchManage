@@ -25,7 +25,7 @@ Resources:
         SaveTextFileEvent:
           Type: Api
           Properties:
-            Path: /save-text-file
+            Path: /text-files
             Method: POST
             RestApiId: !Ref ArchManageApi
 
@@ -38,7 +38,7 @@ Resources:
         info:
           title: 'ArchManage API'
         paths:
-          /save-text-file:
+          /text-files:
             post:
               x-amazon-apigateway-integration:
                 uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
