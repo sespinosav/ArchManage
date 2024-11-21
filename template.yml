@@ -8,10 +8,10 @@ Resources:
     Properties:
       BucketName: archmanage-files
 
-  SaveTextFileLambda:
+  SaveFileLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: SaveTextFileFunction
+      FunctionName: SaveFileFunction
       Handler: handler.save_file
       Runtime: python3.10
       CodeUri: ./src/save_text_file
@@ -22,7 +22,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Ref ArchManageS3Bucket
       Events:
-        SaveTextFileEvent:
+        SaveFileEvent:
           Type: Api
           Properties:
             Path: /text-files
@@ -41,13 +41,13 @@ Resources:
           /text-files:
             post:
               x-amazon-apigateway-integration:
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveFileLambda.Arn}/invocations'
                 responses: {}
                 httpMethod: POST
                 type: aws_proxy
             options:
               x-amazon-apigateway-integration:
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveFileLambda.Arn}/invocations'
                 responses: {}
                 httpMethod: POST
                 type: aws_proxy
