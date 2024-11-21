@@ -12,9 +12,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: SaveFileFunction
-      Handler: handler.save_file
+      Handler: handler.main
       Runtime: python3.10
-      CodeUri: ./src/save_text_file
+      CodeUri: ./src/Save_File
       Timeout: 300
       MemorySize: 128
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -75,4 +75,4 @@ Resources:
 Outputs:
   ArchManageApiURL:
     Description: 'URL of the ArchManage API endpoint'
-    Value: !Sub 'https://${ArchManageApi}.execute-api.${AWS::Region}.amazonaws.com/prod/save-text-file'
+    Value: !Sub 'https://${ArchManageApi}.execute-api.${AWS::Region}.amazonaws.com/prod/save-file'
