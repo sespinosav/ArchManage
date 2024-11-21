@@ -3,32 +3,62 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: 'ArchManage project'
 
 Resources:
-  ArchManageS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: archmanage-files
-
-  SaveTextFileLambda:
+  # Lambda Function for Folder Management
+  FolderManagementLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: SaveTextFileFunction
-      Handler: handler.save_file
+      FunctionName: FolderManagementFunction
+      Handler: handler.main
       Runtime: python3.10
-      CodeUri: ./src/save_text_file
+      CodeUri: ./src/folders  # Path to your source code folder
       Timeout: 300
       MemorySize: 128
       Role: !GetAtt LambdaExecutionRole.Arn
-      Environment:
-        Variables:
-          S3_BUCKET_NAME: !Ref ArchManageS3Bucket
       Events:
-        SaveTextFileEvent:
+        CreateFolder:
           Type: Api
           Properties:
-            Path: /text-files
+            Path: /folders
             Method: POST
             RestApiId: !Ref ArchManageApi
+        RetrieveAllFolder:
+          Type: Api
+          Properties:
+            Path: /folders
+            Method: GET
+            RestApiId: !Ref ArchManageApi
+        RetrieveFolder:
+          Type: Api
+          Properties:
+            Path: /folders/{folder_id}
+            Method: GET
+            RestApiId: !Ref ArchManageApi
+        PutFolder:
+          Type: Api
+          Properties:
+            Path: /folders/{folder_id}
+            Method: PUT
+            RestApiId: !Ref ArchManageApi
+        DeleteFolder:
+          Type: Api
+          Properties:
+            Path: /folders/{folder_id}
+            Method: DELETE
+            RestApiId: !Ref ArchManageApi
+        OptionsFolder:
+          Type: Api
+          Properties:
+            Path: /folders
+            Method: OPTIONS
+            RestApiId: !Ref ArchManageApi
+        OptionsFolderById:
+          Type: Api
+          Properties:
+            Path: /folders/{folder_id}
+            Method: OPTIONS
+            RestApiId: !Ref ArchManageApi
 
+  # API Gateway to expose the Lambda functions
   ArchManageApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -38,20 +68,52 @@ Resources:
         info:
           title: 'ArchManage API'
         paths:
-          /text-files:
+          /folders:
             post:
               x-amazon-apigateway-integration:
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
                 responses: {}
                 httpMethod: POST
                 type: aws_proxy
             options:
               x-amazon-apigateway-integration:
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SaveTextFileLambda.Arn}/invocations'
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+          /folders/{folder_id}:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+            put:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+            delete:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
+                responses: {}
+                httpMethod: POST
+                type: aws_proxy
+            options:
+              x-amazon-apigateway-integration:
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FolderManagementLambda.Arn}/invocations'
                 responses: {}
                 httpMethod: POST
                 type: aws_proxy
 
+  # IAM Role for Lambda Execution
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -63,16 +125,30 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: S3WriteAccessPolicy
+        - PolicyName: FolderManagementPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
+                  - s3:CreateBucket
                   - s3:PutObject
-                Resource: !Sub 'arn:aws:s3:::${ArchManageS3Bucket}/*'
+                  - s3:ListBucket
+                  - s3:DeleteObject
+                  - s3:DeleteBucket
+                Resource:
+                  - arn:aws:s3:::*           # Permission for all S3 buckets
+                  - arn:aws:s3:::*/*         # Permission for all objects in all S3 buckets
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                  - dynamodb:DeleteItem
+                Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ArchManageFolders'
 
 Outputs:
   ArchManageApiURL:
     Description: 'URL of the ArchManage API endpoint'
-    Value: !Sub 'https://${ArchManageApi}.execute-api.${AWS::Region}.amazonaws.com/prod/save-text-file'
+    Value: !Sub 'https://${ArchManageApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
